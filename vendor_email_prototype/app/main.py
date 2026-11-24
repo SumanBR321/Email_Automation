@@ -37,10 +37,13 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 def get_dashboard(request: Request, message: Optional[str] = None, db: Session = Depends(get_db)):
     provider = get_email_provider()
     total_contacts = db.query(Contact).count()
+    contacts = db.query(Contact).order_by(Contact.imported_at.desc()).all()
     suppressions = db.query(Suppression).order_by(Suppression.created_at.desc()).all()
+    suppressed_emails = {s.email for s in suppressions}
+    allowlist = set(settings.TEST_ALLOWLIST) if isinstance(settings.TEST_ALLOWLIST, list) else set()
 
     # Daily send calculation
-    today_start = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.datetime.now(datetime.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     sent_today = db.query(CampaignCheckpoint).filter(
         CampaignCheckpoint.sent_at >= today_start,
         CampaignCheckpoint.status == "sent"
@@ -68,6 +71,9 @@ def get_dashboard(request: Request, message: Optional[str] = None, db: Session =
             "provider": settings.EMAIL_PROVIDER,
             "message": message,
             "total_contacts": total_contacts,
+            "contacts": contacts,
+            "suppressed_emails": suppressed_emails,
+            "allowlist": allowlist,
             "sent_today": sent_today,
             "daily_limit": settings.DAILY_LIMIT,
             "campaign_status": campaign_status,

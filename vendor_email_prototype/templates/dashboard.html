@@ -188,6 +188,49 @@
       </div>
     </div>
 
+    <!-- Active Contacts in Database -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Active Contacts in Database ({{ contacts|length }} records)</h3>
+        <span style="font-size: 12px; color: #8b949e;">All partner email contacts stored in the database.</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Email Address</th>
+            <th>Company Name</th>
+            <th>Consent Source</th>
+            <th>Imported Date</th>
+            <th>Deliverability Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in contacts %}
+          <tr>
+            <td><strong>{{ c.email }}</strong></td>
+            <td>{{ c.company_name }}</td>
+            <td><code style="color: #79c0ff;">{{ c.consent_source }}</code></td>
+            <td style="color: #8b949e;">{{ c.imported_at.strftime('%Y-%m-%d %H:%M:%S') if c.imported_at else 'N/A' }}</td>
+            <td>
+              {% if c.email in suppressed_emails %}
+                <span class="tag tag-unsubscribe">Suppressed</span>
+              {% elif c.email in allowlist or env == 'production' %}
+                <span class="tag" style="background: #3fb95022; color: #3fb950; border: 1px solid #3fb95066;">Sendable</span>
+              {% else %}
+                <span class="tag" style="background: #d2992222; color: #e3b341; border: 1px solid #d2992266;">Non-Allowlisted (Dev)</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; color: #8b949e; padding: 24px;">No contacts in database yet. Upload a CSV file above to import contacts.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
     <!-- Permanent Suppression List -->
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center;">
