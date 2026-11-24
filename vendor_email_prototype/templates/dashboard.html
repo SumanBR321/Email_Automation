@@ -92,6 +92,7 @@
 
     .notice { padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; border: 1px solid var(--border); }
     .notice-info { background: #1f6feb22; border-color: #388bfd66; color: #79c0ff; }
+    .notice-danger { background: #f8514922; border-color: #f8514966; color: #ff7b72; }
   </style>
 </head>
 <body>
@@ -108,7 +109,9 @@
     </header>
 
     {% if message %}
-      <div class="notice notice-info">{{ message }}</div>
+      <div class="notice {% if 'error' in message.lower() or 'failed' in message.lower() or 'denied' in message.lower() %}notice-danger{% else %}notice-info{% endif %}">
+        {{ message }}
+      </div>
     {% endif %}
 
     <!-- Status Metric Cards -->
@@ -141,16 +144,20 @@
 
     <!-- Campaign Dispatch Panel -->
     <div class="card" style="margin-bottom: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div>
           <h3>Campaign Control: Vendor Outreach Blast</h3>
           <p style="margin: 4px 0 0 0; font-size: 13px; color: #8b949e;">
             Status: <strong>{{ campaign_status }}</strong> | Checkpointed sends: <strong>{{ total_sent_campaign }}</strong>
           </p>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
           <form action="/campaign/pause" method="post" style="display: inline;">
             <button type="submit" class="btn-danger">PAUSE CAMPAIGN</button>
+          </form>
+          <form action="/campaign/reset" method="post" style="display: inline;">
+            <input type="hidden" name="campaign_id" value="vendor-blast-01">
+            <button type="submit" style="background: #30363d; color: #c9d1d9;">Reset Checkpoints</button>
           </form>
           <form action="/campaign/send" method="post" style="display: inline;">
             <input type="hidden" name="campaign_id" value="vendor-blast-01">

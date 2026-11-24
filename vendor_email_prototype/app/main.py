@@ -165,9 +165,31 @@ def send_campaign_endpoint(
         provider=provider
     )
     if "text/html" in request.headers.get("accept", ""):
-        msg = result.get("message") or f"Dispatched {result.get('sent_in_this_batch', 0)} messages."
+        if result.get("errors"):
+            msg = "Dispatch Error: " + "; ".join(result["errors"])
+        else:
+            msg = result.get("message") or f"Dispatched {result.get('sent_in_this_batch', 0)} messages."
         return RedirectResponse(f"/?message={msg}", status_code=status.HTTP_303_SEE_OTHER)
     return result
+
+
+@app.post("/campaign/reset")
+def reset_campaign_endpoint(
+    request: Request,
+    campaign_id: str = Form("vendor-blast-01"),
+    db: Session = Depends(get_db)
+):
+    """Resets checkpoints for a campaign so testing can be re-run."""
+    db.query(CampaignCheckpoint).filter(CampaignCheckpoint.campaign_id == campaign_id).delete()
+    state = db.query(CampaignState).filter(CampaignState.campaign_id == campaign_id).first()
+    if state:
+        state.sent_count = 0
+        state.status = "draft"
+    db.commit()
+
+    if "text/html" in request.headers.get("accept", ""):
+        return RedirectResponse(f"/?message=Checkpoints+for+{campaign_id}+reset+successfully.", status_code=status.HTTP_303_SEE_OTHER)
+    return {"status": "reset", "campaign_id": campaign_id}
 
 
 @app.post("/campaign/pause")
