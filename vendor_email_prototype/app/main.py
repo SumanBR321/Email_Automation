@@ -4,7 +4,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, status, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.config import settings
@@ -60,9 +60,9 @@ def get_dashboard(request: Request, message: Optional[str] = None, db: Session =
         stats["complained"] = sum(1 for s in suppressions if s.reason == "complaint")
 
     return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
+        request=request,
+        name="dashboard.html",
+        context={
             "agency_name": settings.AGENCY_NAME,
             "env": settings.ENV,
             "provider": settings.EMAIL_PROVIDER,
@@ -79,8 +79,15 @@ def get_dashboard(request: Request, message: Optional[str] = None, db: Session =
 
 
 # ==========================================
-# 2. Contact CSV Import
+# 2. Contact CSV Import & Download
 # ==========================================
+@app.get("/download/test-contacts")
+def download_test_contacts():
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_contacts.csv")
+    if os.path.exists(csv_path):
+        return FileResponse(path=csv_path, filename="test_contacts.csv", media_type="text/csv")
+    raise HTTPException(status_code=404, detail="File not found")
+
 @app.post("/contacts/import")
 async def import_contacts_endpoint(
     request: Request,

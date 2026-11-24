@@ -35,6 +35,34 @@ def test_csv_cleaning_and_validation(db_session, mock_provider):
     assert alice.consent_source == "2024 Agreement"
 
 
+def test_dynamic_csv_aliases_and_delimiters(db_session, mock_provider):
+    # Semicolon delimited with different headers: "Email Address", "Organization", "Agreement"
+    semicolon_csv = """Email Address;Organization;Agreement
+    david@example.com;Delta Systems;Partner MoU 2025
+    elena@example.com;Echo Global;Network Contract
+    """
+    counts = process_contacts_csv(csv_text=semicolon_csv, db=db_session, provider=mock_provider)
+    assert counts["imported"] == 2
+
+    david = db_session.query(Contact).filter(Contact.email == "david@example.com").first()
+    assert david is not None
+    assert david.company_name == "Delta Systems"
+    assert david.consent_source == "Partner MoU 2025"
+
+
+def test_headerless_csv_import(db_session, mock_provider):
+    # Plain CSV without headers
+    headerless_csv = """frank@example.com, Frank Staffing, Verbal Agreement
+    grace@example.com, Grace Consulting, Written Agreement
+    """
+    counts = process_contacts_csv(csv_text=headerless_csv, db=db_session, provider=mock_provider)
+    assert counts["imported"] == 2
+
+    frank = db_session.query(Contact).filter(Contact.email == "frank@example.com").first()
+    assert frank is not None
+    assert frank.company_name == "Frank Staffing"
+
+
 # ========================================================
 # 2. Suppressed Address Skipped on Import
 # ========================================================
