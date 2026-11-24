@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ agency_name }} — Vendor Email Ops</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --heading: #f0f6fc;
+      --accent: #2f81f7;
+      --danger: #f85149;
+      --warning: #d29922;
+      --success: #3fb950;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    h1, h2, h3 { color: var(--heading); margin: 0 0 8px 0; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-left: 8px;
+    }
+    .badge-dev { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; }
+    .badge-prod { background: #da363333; color: #f85149; border: 1px solid #da3633; }
+    .badge-mock { background: #d2992233; color: #e3b341; border: 1px solid #d29922; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .card-label { font-size: 13px; color: #8b949e; text-transform: uppercase; font-weight: 500; }
+    .card-value { font-size: 28px; font-weight: 700; color: var(--heading); margin-top: 6px; }
+
+    .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    @media (max-width: 800px) { .panel-grid { grid-template-columns: 1fr; } }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { opacity: 0.9; }
+    button.btn-danger { background: var(--danger); }
+    button.btn-warning { background: var(--warning); color: #000; }
+
+    input, textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--heading);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    th { color: #8b949e; font-weight: 600; }
+    tr:hover { background: #21262d; }
+
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .tag-unsubscribe { background: #f8514922; color: #ff7b72; border: 1px solid #f8514966; }
+    .tag-bounce { background: #d2992222; color: #e3b341; border: 1px solid #d2992266; }
+    .tag-complaint { background: #a371f722; color: #d2a8ff; border: 1px solid #a371f766; }
+    .tag-manual { background: #8b949e22; color: #c9d1d9; border: 1px solid #8b949e66; }
+
+    .notice { padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; border: 1px solid var(--border); }
+    .notice-info { background: #1f6feb22; border-color: #388bfd66; color: #79c0ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>{{ agency_name }}</h1>
+        <p style="margin: 0; color: #8b949e; font-size: 14px;">Vendor Outreach Operations & Suppression Guard</p>
+      </div>
+      <div>
+        <span class="badge {% if env == 'production' %}badge-prod{% else %}badge-dev{% endif %}">ENV: {{ env }}</span>
+        <span class="badge badge-mock">PROVIDER: {{ provider }}</span>
+      </div>
+    </header>
+
+    {% if message %}
+      <div class="notice notice-info">{{ message }}</div>
+    {% endif %}
+
+    <!-- Status Metric Cards -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">Active Contacts</div>
+        <div class="card-value">{{ total_contacts }}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Sent Today / Limit</div>
+        <div class="card-value">{{ sent_today }} / {{ daily_limit }}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Delivered</div>
+        <div class="card-value" style="color: var(--success);">{{ stats.delivered }}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Bounced</div>
+        <div class="card-value" style="color: var(--warning);">{{ stats.bounced }}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Complaints</div>
+        <div class="card-value" style="color: var(--danger);">{{ stats.complained }}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Unsubscribed</div>
+        <div class="card-value" style="color: var(--danger);">{{ stats.unsubscribed }}</div>
+      </div>
+    </div>
+
+    <!-- Campaign Dispatch Panel -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3>Campaign Control: Vendor Outreach Blast</h3>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #8b949e;">
+            Status: <strong>{{ campaign_status }}</strong> | Checkpointed sends: <strong>{{ total_sent_campaign }}</strong>
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <form action="/campaign/pause" method="post" style="display: inline;">
+            <button type="submit" class="btn-danger">PAUSE CAMPAIGN</button>
+          </form>
+          <form action="/campaign/send" method="post" style="display: inline;">
+            <input type="hidden" name="campaign_id" value="vendor-blast-01">
+            <input type="hidden" name="confirm" value="true">
+            <button type="submit" style="background: var(--success); color: #000;">TRIGGER BATCH SEND</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-grid">
+      <!-- Contact CSV Upload -->
+      <div class="card">
+        <h3>1. Upload Vendor CSV</h3>
+        <p style="font-size: 13px; color: #8b949e; margin-bottom: 12px;">
+          Format: <code>email, company_name, consent_source</code>. Automatically skips suppressions and duplicates.
+        </p>
+        <form action="/contacts/import" method="post" enctype="multipart/form-data">
+          <input type="file" name="file" accept=".csv" required>
+          <button type="submit">Import Contacts</button>
+        </form>
+      </div>
+
+      <!-- Test Send Form -->
+      <div class="card">
+        <h3>2. Send Allowlisted Test</h3>
+        <p style="font-size: 13px; color: #8b949e; margin-bottom: 12px;">
+          Sends single verification notice. Non-production strictly enforces <code>TEST_ALLOWLIST</code>.
+        </p>
+        <form action="/campaign/test" method="post">
+          <input type="email" name="to_email" placeholder="tester@agency.example.com" required>
+          <input type="text" name="company_name" placeholder="Acme Staffing Inc." required>
+          <button type="submit">Dispatch Test Email</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Permanent Suppression List -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Permanent Suppression Table ({{ suppressions|length }} records)</h3>
+        <span style="font-size: 12px; color: #8b949e;">All future sends automatically skip these addresses.</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Email Address</th>
+            <th>Reason</th>
+            <th>Source</th>
+            <th>Suppressed At</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in suppressions %}
+          <tr>
+            <td><strong>{{ s.email }}</strong></td>
+            <td><span class="tag tag-{{ s.reason }}">{{ s.reason }}</span></td>
+            <td><code>{{ s.source }}</code></td>
+            <td style="color: #8b949e;">{{ s.created_at }}</td>
+            <td>
+              <form action="/admin/resubscribe" method="post" style="display: flex; gap: 4px;">
+                <input type="hidden" name="email" value="{{ s.email }}">
+                <input type="text" name="reason" placeholder="Mandatory legal reason" required style="margin: 0; padding: 4px 8px; font-size: 12px; width: 180px;">
+                <button type="submit" class="btn-warning" style="padding: 4px 8px; font-size: 12px;">Re-subscribe</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; color: #8b949e; padding: 24px;">No addresses currently suppressed.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</body>
+</html>

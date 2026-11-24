@@ -1,0 +1,16 @@
+Dear Partners at {{ company_name }},
+
+We are reaching out under our candidate-sharing agreement to provide an update on newly available technical candidates across software engineering, platform infrastructure, and engineering leadership.
+
+Our updated candidate roster is verified, pre-screened, and immediately available for partner placements.
+
+If you have open client requisitions or would like to review the updated profiles, please reply directly to this notice or connect with your designated account coordinator.
+
+Best regards,
+The Talent Operations Team
+{{ agency_name }}
+
+---
+You received this message because {{ company_name }} maintains an active candidate-sharing partnership with {{ agency_name }}.
+{{ agency_postal_address }}
+To unsubscribe from vendor partner notifications: {{ unsubscribe_url }}

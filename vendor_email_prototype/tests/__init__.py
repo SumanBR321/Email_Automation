@@ -1,0 +1,1 @@
+"""Vendor Email Prototype Tests."""
