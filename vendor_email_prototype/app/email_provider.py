@@ -280,13 +280,17 @@ class SmtpProvider(EmailProvider):
         from_email: Optional[str] = None,
         from_name: Optional[str] = None,
     ) -> None:
-        self.host = host or settings.SMTP_HOST
-        self.port = port if port is not None else settings.SMTP_PORT
-        self.user = user or settings.SMTP_USER
-        self.password = password or settings.SMTP_PASSWORD
-        self.use_ssl = use_ssl if use_ssl is not None else settings.SMTP_USE_SSL
-        self.from_email = from_email or settings.SMTP_FROM_EMAIL or self.user
-        self.from_name = from_name or settings.SMTP_FROM_NAME or settings.AGENCY_NAME
+        # Load fresh settings in case .env was updated without a server restart
+        from app.config import Settings
+        cfg = Settings()
+
+        self.host = host or cfg.SMTP_HOST
+        self.port = port if port is not None else cfg.SMTP_PORT
+        self.user = user or cfg.SMTP_USER
+        self.password = password or cfg.SMTP_PASSWORD
+        self.use_ssl = use_ssl if use_ssl is not None else cfg.SMTP_USE_SSL
+        self.from_email = from_email or cfg.SMTP_FROM_EMAIL or self.user
+        self.from_name = from_name or cfg.SMTP_FROM_NAME or cfg.AGENCY_NAME
         self.sent_emails: List[Dict[str, Any]] = []
 
     def import_contacts(self, contacts: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -376,7 +380,9 @@ _mock_instance: Optional[MockProvider] = None
 
 def get_email_provider() -> EmailProvider:
     global _mock_instance
-    provider_name = settings.EMAIL_PROVIDER.lower().strip()
+    from app.config import Settings
+    cfg = Settings()
+    provider_name = cfg.EMAIL_PROVIDER.lower().strip()
     if provider_name == "unitpost":
         return UnitpostProvider()
     elif provider_name == "smtp":
