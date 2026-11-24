@@ -11,8 +11,19 @@ class Settings(BaseSettings):
     APP_PORT: int = 8001
     SECRET_KEY: str = "default_development_secret_key"
 
-    EMAIL_PROVIDER: str = "mock"  # "mock" or "unitpost"
+    # Provider Configuration: 'mock', 'unitpost', or 'smtp'
+    EMAIL_PROVIDER: str = "mock"
 
+    # SMTP Configuration (Direct smtplib relay, e.g. Gmail)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 465
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_SSL: bool = True
+    SMTP_FROM_EMAIL: str = ""
+    SMTP_FROM_NAME: str = "Apex Talent Partners"
+
+    # Unitpost Credentials (Send & Contacts scoped key, never full-access)
     UNITPOST_API_KEY: str = "pk_test_placeholder"
     UNITPOST_WEBHOOK_SECRET: str = "whsec_placeholder"
     UNITPOST_FROM_EMAIL: str = "notices@agency.example.com"

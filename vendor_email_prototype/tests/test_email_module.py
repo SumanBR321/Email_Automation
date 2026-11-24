@@ -282,3 +282,51 @@ def test_campaign_dispatch_skips_suppressed_and_checkpoints(db_session, mock_pro
     res2 = dispatch_campaign_batch(campaign_id="test-camp-01", confirm=True, db=db_session, provider=mock_provider)
     assert res2["sent_in_this_batch"] == 0
     assert res2["status"] == "completed"
+
+
+# ========================================================
+# 9. SmtpProvider Unit & Integration Tests
+# ========================================================
+def test_smtp_provider_missing_credentials():
+    from app.email_provider import SmtpProvider
+    provider = SmtpProvider(user="", password="")
+    with pytest.raises(ValueError, match="SMTP configuration missing"):
+        provider.send_test("recipient@example.com", "Test Subject", "<p>Hello</p>")
+
+
+def test_smtp_provider_send_success(monkeypatch):
+    from unittest.mock import MagicMock
+    from app.email_provider import SmtpProvider
+
+    mock_server = MagicMock()
+    mock_smtp_ssl = MagicMock()
+    mock_smtp_ssl.return_value.__enter__.return_value = mock_server
+
+    monkeypatch.setattr("smtplib.SMTP_SSL", mock_smtp_ssl)
+
+    provider = SmtpProvider(
+        host="smtp.gmail.com",
+        port=465,
+        user="test_sender@gmail.com",
+        password="test_app_password_16",
+        use_ssl=True,
+        from_email="test_sender@gmail.com",
+        from_name="Apex Talent Partners",
+    )
+
+    res = provider.send_test(
+        to_email="partner@vendor.com",
+        subject="Vendor Notice",
+        body="<p>Notice Content</p>",
+    )
+
+    assert res["status"] == "sent"
+    assert res["to"] == "partner@vendor.com"
+    assert "smtp_" in res["id"]
+
+    mock_server.login.assert_called_once_with("test_sender@gmail.com", "test_app_password_16")
+    mock_server.send_message.assert_called_once()
+    sent_msg = mock_server.send_message.call_args[0][0]
+    assert sent_msg["To"] == "partner@vendor.com"
+    assert sent_msg["Subject"] == "Vendor Notice"
+    assert "test_sender@gmail.com" in sent_msg["From"]

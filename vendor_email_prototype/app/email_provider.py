@@ -264,13 +264,123 @@ class UnitpostProvider(EmailProvider):
         return suppressed_items
 
 
+class SmtpProvider(EmailProvider):
+    """
+    Direct SMTP email provider using Python's built-in smtplib and ssl.
+    Enables live delivery without requiring custom domain DNS verification.
+    """
+
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        use_ssl: Optional[bool] = None,
+        from_email: Optional[str] = None,
+        from_name: Optional[str] = None,
+    ) -> None:
+        self.host = host or settings.SMTP_HOST
+        self.port = port if port is not None else settings.SMTP_PORT
+        self.user = user or settings.SMTP_USER
+        self.password = password or settings.SMTP_PASSWORD
+        self.use_ssl = use_ssl if use_ssl is not None else settings.SMTP_USE_SSL
+        self.from_email = from_email or settings.SMTP_FROM_EMAIL or self.user
+        self.from_name = from_name or settings.SMTP_FROM_NAME or settings.AGENCY_NAME
+        self.sent_emails: List[Dict[str, Any]] = []
+
+    def import_contacts(self, contacts: List[Dict[str, Any]]) -> Dict[str, Any]:
+        return {"imported": len(contacts), "status": "completed"}
+
+    def create_campaign(
+        self,
+        name: str,
+        subject: str,
+        template_content: str,
+        recipients: List[str],
+        topic_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        campaign_id = f"smtp_cmp_{uuid.uuid4().hex[:8]}"
+        return {"id": campaign_id, "name": name, "status": "ready", "recipients_count": len(recipients)}
+
+    def send_test(self, to_email: str, subject: str, body: str) -> Dict[str, Any]:
+        import re
+        import smtplib
+        import ssl
+        from email.message import EmailMessage
+
+        if not self.user or not self.password:
+            raise ValueError(
+                "SMTP configuration missing: Please set SMTP_USER and SMTP_PASSWORD in your .env file."
+            )
+
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        sender_header = f"{self.from_name} <{self.from_email}>" if self.from_name else self.from_email
+        msg["From"] = sender_header
+        msg["To"] = to_email
+
+        # If body contains html, provide both plain text and rich HTML alternatives
+        if "<html" in body.lower() or "<p" in body.lower() or "<div" in body.lower():
+            plain_text = re.sub(r"<[^>]+>", "", body).strip()
+            msg.set_content(plain_text or "Please view this email in an HTML-compatible client.")
+            msg.add_alternative(body, subtype="html")
+        else:
+            msg.set_content(body)
+
+        message_id = f"smtp_{uuid.uuid4().hex[:12]}"
+
+        # Connect and send
+        if self.use_ssl:
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(self.host, self.port, context=context) as server:
+                server.login(self.user, self.password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(self.host, self.port) as server:
+                server.starttls(context=ssl.create_default_context())
+                server.login(self.user, self.password)
+                server.send_message(msg)
+
+        record = {
+            "id": message_id,
+            "to": to_email,
+            "status": "sent",
+            "sent_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        self.sent_emails.append(record)
+        return record
+
+    def send_campaign(self, campaign_id: str) -> Dict[str, Any]:
+        return {"id": campaign_id, "status": "sending"}
+
+    def pause_campaign(self, campaign_id: str) -> Dict[str, Any]:
+        return {"id": campaign_id, "status": "paused"}
+
+    def get_stats(self, campaign_id: str) -> Dict[str, Any]:
+        return {
+            "queued": 0,
+            "sent": len(self.sent_emails),
+            "delivered": len(self.sent_emails),
+            "bounced": 0,
+            "complained": 0,
+            "unsubscribed": 0,
+        }
+
+    def list_suppressions(self) -> List[Dict[str, Any]]:
+        return []
+
+
 # Global singleton instance for the app runtime
 _mock_instance: Optional[MockProvider] = None
 
 def get_email_provider() -> EmailProvider:
     global _mock_instance
-    if settings.EMAIL_PROVIDER.lower() == "unitpost":
+    provider_name = settings.EMAIL_PROVIDER.lower().strip()
+    if provider_name == "unitpost":
         return UnitpostProvider()
+    elif provider_name == "smtp":
+        return SmtpProvider()
     if _mock_instance is None:
         _mock_instance = MockProvider()
     return _mock_instance

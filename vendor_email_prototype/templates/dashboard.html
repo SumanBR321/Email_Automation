@@ -45,6 +45,8 @@
     .badge-dev { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; }
     .badge-prod { background: #da363333; color: #f85149; border: 1px solid #da3633; }
     .badge-mock { background: #d2992233; color: #e3b341; border: 1px solid #d29922; }
+    .badge-smtp { background: #23863633; color: #3fb950; border: 1px solid #238636; }
+    .badge-unitpost { background: #a371f733; color: #d2a8ff; border: 1px solid #a371f7; }
 
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
@@ -104,7 +106,7 @@
       </div>
       <div>
         <span class="badge {% if env == 'production' %}badge-prod{% else %}badge-dev{% endif %}">ENV: {{ env }}</span>
-        <span class="badge badge-mock">PROVIDER: {{ provider }}</span>
+        <span class="badge {% if provider == 'smtp' %}badge-smtp{% elif provider == 'unitpost' %}badge-unitpost{% else %}badge-mock{% endif %}">PROVIDER: {{ provider }}</span>
       </div>
     </header>
 
